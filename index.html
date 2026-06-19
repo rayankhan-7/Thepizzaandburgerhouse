@@ -1052,8 +1052,10 @@
         <div class="cart-summary">
             <div class="summary-row"><span>Subtotal:</span><span>Rs. <span id="subtotal-val">0</span></span></div>
             <div class="summary-row" id="discount-row" style="display: none; color: #ff5252;"><span>Discount (20%):</span><span>-Rs. <span id="discount-val">0</span></span></div>
+            <div class="summary-row" style="color: var(--text-muted);"><span>Delivery Charges:</span><span>Rs. <span id="delivery-val">50</span></span></div>
             <div class="summary-row total"><span>Total:</span><span>Rs. <span id="total-val">0</span></span></div>
         </div>
+
 
         <div class="checkout-form">
             <input type="text" id="cust-name" class="checkout-input" placeholder="Your Name" required>
@@ -1200,7 +1202,52 @@
             document.getElementById('total-val').innerText = total;
         }
 
-                function submitOrder() {
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); margin-top: 20px;">Your cart is empty.</p>';
+                document.getElementById('subtotal-val').innerText = '0';
+                document.getElementById('total-val').innerText = '0';
+                document.getElementById('discount-row').style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = '';
+            let subtotal = 0;
+
+            cart.forEach(item => {
+                subtotal += (item.price * item.qty);
+                container.innerHTML += `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <h4>${item.name}</h4>
+                            <span>Rs. ${item.price * item.qty}</span>
+                        </div>
+                        <div class="cart-item-qty">
+                            <button class="qty-btn" onclick="changeQty('${item.name}', -1)">-</button>
+                            <span>${item.qty}</span>
+                            <button class="qty-btn" onclick="changeQty('${item.name}', 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            let deliveryCharges = 50;
+            let discount = discountApplied ? Math.round(subtotal * 0.20) : 0;
+            // Total me Subtotal se discount minus hoga aur Rs. 50 Delivery add hogi
+            let total = subtotal - discount + deliveryCharges;
+
+            document.getElementById('subtotal-val').innerText = subtotal;
+            if (discountApplied) {
+                document.getElementById('discount-val').innerText = discount;
+                document.getElementById('discount-row').style.display = 'flex';
+            } else {
+                document.getElementById('discount-row').style.display = 'none';
+            }
+            document.getElementById('total-val').innerText = total;
+        }
+
+        function submitOrder() {
             const name = document.getElementById('cust-name').value.trim();
             const phone = document.getElementById('cust-phone').value.trim();
             const address = document.getElementById('cust-address').value.trim();
@@ -1215,8 +1262,9 @@
             }
 
             let subtotal = parseInt(document.getElementById('subtotal-val').innerText);
+            let deliveryCharges = 50;
             let discount = discountApplied ? Math.round(subtotal * 0.20) : 0;
-            let total = subtotal - discount;
+            let total = subtotal - discount + deliveryCharges;
 
             let orderText = `*NEW ORDER - THE PIZZA & BURGER HOUSE*\n\n`;
             orderText += `*Customer Details:*\n`;
@@ -1233,6 +1281,7 @@
             if (discountApplied) {
                 orderText += `Discount (Promo rayan07): -Rs. ${discount}\n`;
             }
+            orderText += `Delivery Charges: Rs. ${deliveryCharges}\n`;
             orderText += `*Grand Total: Rs. ${total}*`;
 
             let targetMobile = "923322822654";
@@ -1251,6 +1300,7 @@
             document.getElementById('promo-code').value = '';
             updateCartUI();
         }
+
 
     </script>
 </body>
