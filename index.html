@@ -592,6 +592,34 @@
             .tab-navigation { gap: 10px; }
             .tab-btn { padding: 10px 20px; font-size: 0.95rem; }
         }
+        /* Modern Toast Notification Styling */
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #ff5252; /* Beautiful red accent color */
+    color: #ffffff;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    font-family: sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    z-index: 10000;
+    display: none;
+    animation: fadeIn 0.5s, fadeOut 0.5s 3.5s;
+}
+
+@keyframes fadeIn {
+    from { top: 0; opacity: 0; }
+    to { top: 20px; opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { top: 20px; opacity: 1; }
+    to { top: 0; opacity: 0; }
+}
+
     </style>
 </head>
 <body>
@@ -1247,23 +1275,91 @@
             document.getElementById('total-val').innerText = total;
         }
 
+                function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); margin-top: 20px;">Your cart is empty.</p>';
+                document.getElementById('subtotal-val').innerText = '0';
+                document.getElementById('total-val').innerText = '0';
+                document.getElementById('discount-row').style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = '';
+            let subtotal = 0;
+            let discountableSubtotal = 0;
+
+            cart.forEach(item => {
+                let itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+
+                let itemNameUpper = item.name.toUpperCase();
+                if (!itemNameUpper.includes('DEAL') && !itemNameUpper.includes('OFFER')) {
+                    discountableSubtotal += itemTotal;
+                }
+
+                container.innerHTML += `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <h4>${item.name}</h4>
+                            <span>Rs. ${itemTotal}</span>
+                        </div>
+                        <div class="cart-item-qty">
+                            <button class="qty-btn" onclick="changeQty('${item.name}', -1)">-</button>
+                            <span>${item.qty}</span>
+                            <button class="qty-btn" onclick="changeQty('${item.name}', 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            let deliveryCharges = 50;
+            let discount = discountApplied ? Math.round(discountableSubtotal * 0.20) : 0;
+            let total = subtotal - discount + deliveryCharges;
+
+            document.getElementById('subtotal-val').innerText = subtotal;
+            if (discountApplied && discount > 0) {
+                document.getElementById('discount-val').innerText = discount;
+                document.getElementById('discount-row').style.display = 'flex';
+            } else if (discountApplied && discount === 0) {
+                document.getElementById('discount-row').style.display = 'none';
+                // Yahan purana alert hata kar naya modern notification lagaya hai
+                showNotification('Promo valid for Main Menu items only, not for Deals!');
+            } else {
+                document.getElementById('discount-row').style.display = 'none';
+            }
+            document.getElementById('total-val').innerText = total;
+        }
+
         function submitOrder() {
             const name = document.getElementById('cust-name').value.trim();
             const phone = document.getElementById('cust-phone').value.trim();
             const address = document.getElementById('cust-address').value.trim();
 
             if (cart.length === 0) {
-                alert('Please add some items to your cart first.');
+                showNotification('Please add some items to your cart first.');
                 return;
             }
             if (!name || !phone || !address) {
-                alert('Please fill out your Name, Contact Number, and Delivery Address.');
+                showNotification('Please fill out Name, Phone, and Address.');
                 return;
             }
 
-            let subtotal = parseInt(document.getElementById('subtotal-val').innerText);
+            let subtotal = 0;
+            let discountableSubtotal = 0;
+
+            cart.forEach(item => {
+                let itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+
+                let itemNameUpper = item.name.toUpperCase();
+                if (!itemNameUpper.includes('DEAL') && !itemNameUpper.includes('OFFER')) {
+                    discountableSubtotal += itemTotal;
+                }
+            });
+
             let deliveryCharges = 50;
-            let discount = discountApplied ? Math.round(subtotal * 0.20) : 0;
+            let discount = discountApplied ? Math.round(discountableSubtotal * 0.20) : 0;
             let total = subtotal - discount + deliveryCharges;
 
             let orderText = `*NEW ORDER - THE PIZZA & BURGER HOUSE*\n\n`;
@@ -1278,8 +1374,8 @@
             });
 
             orderText += `\nSubtotal: Rs. ${subtotal}\n`;
-            if (discountApplied) {
-                orderText += `Discount (Promo rayan07): -Rs. ${discount}\n`;
+            if (discountApplied && discount > 0) {
+                orderText += `Discount (20% Off on Menu Items Only): -Rs. ${discount}\n`;
             }
             orderText += `Delivery Charges: Rs. ${deliveryCharges}\n`;
             orderText += `*Grand Total: Rs. ${total}*`;
@@ -1290,7 +1386,7 @@
             
             window.open(whatsappUrl, '_blank');
             
-            alert('Thank you! Your order details have been compiled and sent via WhatsApp backend routing. We will contact you shortly.');
+            showNotification('Order compiled! Sending via WhatsApp...');
             
             cart = [];
             discountApplied = false;
@@ -1301,7 +1397,23 @@
             updateCartUI();
         }
 
+        // Modern Toast Notification Function
+function showNotification(message) {
+    const toast = document.getElementById('custom-toast');
+    toast.innerText = message;
+    toast.style.display = 'block';
+    
+    // 4 seconds baad notification ko khud hi hide kar dega
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 4000);
+}
+
+
 
     </script>
+    <!-- Modern Notification Container -->
+<div id="custom-toast" class="toast-notification"></div>
+
 </body>
 </html>
